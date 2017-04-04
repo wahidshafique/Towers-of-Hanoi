@@ -31,19 +31,25 @@ public class DiscTouch : MonoBehaviour {
     Vector3 refPos2;
     Vector3 refPos3;
 
+    Collider[] attachedColliders;
+
     [Tooltip("Layer to ignore for the beam")]
     private LayerMask beamMask;
     #endregion variables
 
-    void Start() {
+    void Awake() {
         myRenderer = GetComponent<Renderer>();
+        rig = GetComponent<Rigidbody>();
+        attachedColliders = GetComponents<Collider>();
+        //checkerCollider = GetComponentsInChildren<Collider>();
+    }
+
+    void Start() {
         isInteractable = true;
         origZ = transform.position.z;
-        rig = GetComponent<Rigidbody>();
         refPos1 = GetOffsetPosition(destHanoi1, false);
         refPos2 = GetOffsetPosition(destHanoi2, false);
         refPos3 = GetOffsetPosition(destHanoi3, false);
-        //MoveDisc("F", "f", "f");
     }
 
     void Update() {
@@ -53,42 +59,32 @@ public class DiscTouch : MonoBehaviour {
         }
     }
 
-    IEnumerator onCoroutine() {
-        while (true) {
-            StartCoroutine(WaitAndTravel(1.0f, refPos1));
-            yield return new WaitForSeconds(3f);
-            StartCoroutine(WaitAndTravel(1.0f, refPos2));
-            yield return new WaitForSeconds(3f);
-            StartCoroutine(WaitAndTravel(1.0f, refPos3));
-            yield return new WaitForSeconds(3f);
+    void OnTriggerStay(Collider other) {
+        if (other.tag == "Torus") {
+            isLegal = false;
+        }
+    }
+    void OnTriggerExit(Collider other) {
+        if (other.tag == "Torus") {
+            myRenderer.material.color = Color.white;
+            isLegal = true;
         }
     }
 
-    bool isValidMove() {
-        isLegal = true;
-        RaycastHit hit;
-        float thickness = 1f; //<-- Desired thickness here.
-        Vector3 origin = transform.position - new Vector3(0, 1, 0);
-        Vector3 direction = transform.TransformDirection(Vector3.up);
-        if (Physics.SphereCast(origin, thickness, direction, out hit)) {
-            if (hit.transform.tag == "Torus") {
-                isLegal = false;
-                print(hit.transform.gameObject.name);
-            }
-        }
-        return true;
+    public void PullTrigger(Collider c) {
+
     }
 
-    public void MoveDisc(int destinationNum) {
+    public void MoveDisc(int destinationNum, float initdelay) {
         switch (destinationNum) {
             case 1:
-                StartCoroutine(WaitAndTravel(1.0f, refPos1));
+                StartCoroutine(WaitAndTravel(1.0f, refPos1, initdelay));
                 break;
             case 2:
-                StartCoroutine(WaitAndTravel(1.0f, refPos2));
+                StartCoroutine(WaitAndTravel(1.0f, refPos2, initdelay));
                 break;
             case 3:
-                StartCoroutine(WaitAndTravel(1.0f, refPos3));
+                StartCoroutine(WaitAndTravel(1.0f, refPos3, initdelay));
                 break;
             default:
                 break;
@@ -96,7 +92,6 @@ public class DiscTouch : MonoBehaviour {
     }
 
     void OnMouseDown() {
-        isValidMove();
         if (isInteractable && isLegal) {
             myRenderer.material.color = Color.white;
             transform.position = new Vector3(transform.position.x, transform.position.y, origZ);
@@ -112,7 +107,8 @@ public class DiscTouch : MonoBehaviour {
         isMouseDown = false;
         rig.isKinematic = false;
     }
-    private IEnumerator WaitAndTravel(float waitTime, Vector3 refPos) {
+    private IEnumerator WaitAndTravel(float waitTime, Vector3 refPos, float initdelay) {
+        yield return new WaitForSeconds(initdelay);
         LaunchProjectile();
         yield return new WaitForSeconds(waitTime);
         rig.velocity = Vector3.zero;
@@ -122,6 +118,7 @@ public class DiscTouch : MonoBehaviour {
         Vector3 ourPos = GetOffsetPosition(this.transform, true);
         desiredDisplacement = refPos - ourPos;
         LaunchProjectileToDest();
+        SetAllCollidersStatus(true);
         yield return new WaitForSeconds(time);
     }
 
@@ -133,6 +130,7 @@ public class DiscTouch : MonoBehaviour {
     }
 
     void LaunchProjectile() {
+        SetAllCollidersStatus(false);
         forceForHeight = Mathf.Sqrt(2 * destHanoi1.transform.position.y * 4 * 9.8f);
         rig.AddForce(new Vector3(0, forceForHeight, 0), ForceMode.Impulse);
     }
@@ -151,6 +149,12 @@ public class DiscTouch : MonoBehaviour {
             refTransform.position = new Vector3(transform.position.x, forceForHeight, transform.position.z);
         }
         return isBottom ? refTransform.position - (new Vector3(0.0f, refTransform.localScale.y, 0.0f) * 0.5f) : refTransform.position + (new Vector3(0.0f, refTransform.localScale.y, 0.0f) * 0.5f);
+    }
+
+    public void SetAllCollidersStatus(bool active) {
+        foreach (Collider c in attachedColliders) {
+            c.enabled = active;
+        }
     }
     #endregion physics
 }
