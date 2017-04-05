@@ -6,9 +6,9 @@ public class DiscTouch : MonoBehaviour {
     #region variables
     //placement
     [HideInInspector]
-    public bool isInteractable;
-    private bool isLegal = true;
-    private bool isMouseDown = false;
+    public bool isInteractable = false;
+    [HideInInspector]
+    public int valueID = 0;
     private float origZ;//just to keep it in place
     private Renderer myRenderer;
     private Rigidbody rig;
@@ -20,7 +20,8 @@ public class DiscTouch : MonoBehaviour {
     Transform destHanoi3;
 
     //physics
-    private float time = 1f;
+    private float travelTime;
+    private float time = 1.0f;
     private float acceleration;
     float forceForHeight;
     private Vector3 force = Vector3.zero;
@@ -38,10 +39,23 @@ public class DiscTouch : MonoBehaviour {
     #endregion variables
 
     void Awake() {
-        myRenderer = GetComponent<Renderer>();
+        if (transform.CompareTag("TorusSmall")) {
+            valueID = 0;
+        } else if (transform.CompareTag("TorusMedium")) {
+            valueID = 1;
+        } else if (transform.CompareTag("TorusLarge")) {
+            valueID = 2;
+        } else if (transform.CompareTag("TorusXL")) {
+            valueID = 3;
+        } else if (transform.CompareTag("TorusMega")) {
+            valueID = 4;
+        } else if (transform.CompareTag("TorusGod")) {
+            valueID = 4;
+        }
+
+myRenderer = GetComponent<Renderer>();
         rig = GetComponent<Rigidbody>();
         attachedColliders = GetComponents<Collider>();
-        //checkerCollider = GetComponentsInChildren<Collider>();
     }
 
     void Start() {
@@ -50,29 +64,6 @@ public class DiscTouch : MonoBehaviour {
         refPos1 = GetOffsetPosition(destHanoi1, false);
         refPos2 = GetOffsetPosition(destHanoi2, false);
         refPos3 = GetOffsetPosition(destHanoi3, false);
-    }
-
-    void Update() {
-        if (isMouseDown) {
-            float distance_to_screen = Camera.main.WorldToScreenPoint(gameObject.transform.position).z;
-            transform.position = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance_to_screen));
-        }
-    }
-
-    void OnTriggerStay(Collider other) {
-        if (other.tag == "Torus") {
-            isLegal = false;
-        }
-    }
-    void OnTriggerExit(Collider other) {
-        if (other.tag == "Torus") {
-            myRenderer.material.color = Color.white;
-            isLegal = true;
-        }
-    }
-
-    public void PullTrigger(Collider c) {
-
     }
 
     public void MoveDisc(int destinationNum, float initdelay) {
@@ -87,26 +78,11 @@ public class DiscTouch : MonoBehaviour {
                 StartCoroutine(WaitAndTravel(1.0f, refPos3, initdelay));
                 break;
             default:
+                print("You suppied bad argument");
                 break;
         }
     }
 
-    void OnMouseDown() {
-        if (isInteractable && isLegal) {
-            myRenderer.material.color = Color.white;
-            transform.position = new Vector3(transform.position.x, transform.position.y, origZ);
-            transform.rotation = Quaternion.identity;
-            isMouseDown = true;
-            rig.isKinematic = true;
-        } else {
-            myRenderer.material.color = Color.red;
-        }
-    }
-
-    void OnMouseUp() {
-        isMouseDown = false;
-        rig.isKinematic = false;
-    }
     private IEnumerator WaitAndTravel(float waitTime, Vector3 refPos, float initdelay) {
         yield return new WaitForSeconds(initdelay);
         LaunchProjectile();
@@ -130,8 +106,13 @@ public class DiscTouch : MonoBehaviour {
     }
 
     void LaunchProjectile() {
+        float g = Physics.gravity.magnitude;
         SetAllCollidersStatus(false);
-        forceForHeight = Mathf.Sqrt(2 * destHanoi1.transform.position.y * 4 * 9.8f);
+        forceForHeight = Mathf.Sqrt(2 * g * 50);
+        travelTime = 2 * forceForHeight / g;
+        //time = travelTime;
+        //forceForHeight = Mathf.Sqrt(2 * destHanoi1.transform.position.y * 4 * 9.8f);
+        //rig.velocity = new Vector3(0, vertSpeed, 0);
         rig.AddForce(new Vector3(0, forceForHeight, 0), ForceMode.Impulse);
     }
 
