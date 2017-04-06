@@ -21,6 +21,7 @@ public class HanoiScript : MonoBehaviour {
     private bool canInteract = true;
     private bool isNotMakingMove = true;
     private bool gameOver = false;
+    private bool auto = false;
     void Start() {
         print("d len" + discs.Length);
         selectedOtherPoleval = 999;
@@ -41,53 +42,56 @@ public class HanoiScript : MonoBehaviour {
 
     void Update() {
         if (!gameOver) {
-            if (Input.GetButtonDown("Fire1")) {
-                RaycastHit hitinfo;
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out hitinfo, 100, 1 << 8)) {
-                    print(hitinfo.transform.gameObject.name);
-                    if (isNotMakingMove) {
-                        if (hitinfo.transform.CompareTag("Hanoi1") && poles[0].Count > 0) {
-                            hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
-                            selectedRealPole = hitinfo.transform.gameObject;
-                            StartCoroutine(makeSubsequentMove(selectedRealPole, poles[0]));
-                        } else if (hitinfo.transform.CompareTag("Hanoi2") && poles[1].Count > 0) {
-                            hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
-                            selectedRealPole = hitinfo.transform.gameObject;
-                            StartCoroutine(makeSubsequentMove(selectedRealPole, poles[1]));
-                        } else if (hitinfo.transform.CompareTag("Hanoi3") && poles[2].Count > 0) {
-                            hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
-                            selectedRealPole = hitinfo.transform.gameObject;
-                            StartCoroutine(makeSubsequentMove(selectedRealPole, poles[2]));
-                        } else if (hitinfo.transform.CompareTag("Hanoi4") && poles[3].Count > 0) {
-                            hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
-                            selectedRealPole = hitinfo.transform.gameObject;
-                            StartCoroutine(makeSubsequentMove(selectedRealPole, poles[3]));
+            winner.text = "";
+            if (!auto) {
+                if (Input.GetButtonDown("Fire1")) {
+                    RaycastHit hitinfo;
+                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    if (Physics.Raycast(ray, out hitinfo, 100, 1 << 8)) {
+                        print(hitinfo.transform.gameObject.name);
+                        if (isNotMakingMove) {
+                            if (hitinfo.transform.CompareTag("Hanoi1") && poles[0].Count > 0) {
+                                hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
+                                selectedRealPole = hitinfo.transform.gameObject;
+                                StartCoroutine(makeSubsequentMove(selectedRealPole, poles[0]));
+                            } else if (hitinfo.transform.CompareTag("Hanoi2") && poles[1].Count > 0) {
+                                hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
+                                selectedRealPole = hitinfo.transform.gameObject;
+                                StartCoroutine(makeSubsequentMove(selectedRealPole, poles[1]));
+                            } else if (hitinfo.transform.CompareTag("Hanoi3") && poles[2].Count > 0) {
+                                hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
+                                selectedRealPole = hitinfo.transform.gameObject;
+                                StartCoroutine(makeSubsequentMove(selectedRealPole, poles[2]));
+                            } else if (hitinfo.transform.CompareTag("Hanoi4") && poles[3].Count > 0) {
+                                hitinfo.transform.GetComponentInChildren<GlowObject>().TriggerGlow();
+                                selectedRealPole = hitinfo.transform.gameObject;
+                                StartCoroutine(makeSubsequentMove(selectedRealPole, poles[3]));
+                            } else {
+                                print("Invalid Move");
+                            }
                         } else {
-                            print("Invalid Move");
+                            if (hitinfo.transform.CompareTag("Hanoi1")) {
+                                selectedOtherPoleval = 0;
+                                selectedOtherPole = hitinfo.transform.gameObject;
+                                //StartCoroutine(makeSubsequentMove(selectedRealPole, poles[0]));
+                            } else if (hitinfo.transform.CompareTag("Hanoi2")) {
+                                selectedOtherPoleval = 1;
+                                selectedOtherPole = hitinfo.transform.gameObject;
+                            } else if (hitinfo.transform.CompareTag("Hanoi3")) {
+                                selectedOtherPoleval = 2;
+                                selectedOtherPole = hitinfo.transform.gameObject;
+                            } else if (hitinfo.transform.CompareTag("Hanoi4")) {
+                                selectedOtherPoleval = 3;
+                                selectedOtherPole = hitinfo.transform.gameObject;
+                            } else {
+                                isNotMakingMove = true;
+                                //selectedRealPole.GetComponent<GlowObject>().ExitGlow();
+                            }
+                            //first check to see if the stack even has something on top
+                            //if it does then wait for player to make next move
+                            //else return 
+                            //now wait to select next move
                         }
-                    } else {
-                        if (hitinfo.transform.CompareTag("Hanoi1")) {
-                            selectedOtherPoleval = 0;
-                            selectedOtherPole = hitinfo.transform.gameObject;
-                            //StartCoroutine(makeSubsequentMove(selectedRealPole, poles[0]));
-                        } else if (hitinfo.transform.CompareTag("Hanoi2")) {
-                            selectedOtherPoleval = 1;
-                            selectedOtherPole = hitinfo.transform.gameObject;
-                        } else if (hitinfo.transform.CompareTag("Hanoi3")) {
-                            selectedOtherPoleval = 2;
-                            selectedOtherPole = hitinfo.transform.gameObject;
-                        } else if (hitinfo.transform.CompareTag("Hanoi4")) {
-                            selectedOtherPoleval = 3;
-                            selectedOtherPole = hitinfo.transform.gameObject;
-                        } else {
-                            isNotMakingMove = true;
-                            //selectedRealPole.GetComponent<GlowObject>().ExitGlow();
-                        }
-                        //first check to see if the stack even has something on top
-                        //if it does then wait for player to make next move
-                        //else return 
-                        //now wait to select next move
                     }
                 }
             }
@@ -152,6 +156,7 @@ public class HanoiScript : MonoBehaviour {
 
     public void callSolve() {
         if (!autoRunReset) {
+            auto = true;
             autoSolveBtn.interactable = false;
             StartCoroutine(SolveAllTasker());
         } else {
@@ -177,6 +182,7 @@ public class HanoiScript : MonoBehaviour {
     private IEnumerator SolveAllTasker() {
         yield return StartCoroutine(SolveAll(discs.Length, poles[0], 1, poles[1], 2, poles[2], 3));
         autoSolveBtn.interactable = true;
+        gameOver = true;
         autoRunReset = true;
     }
 
